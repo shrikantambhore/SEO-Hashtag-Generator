@@ -1,6 +1,6 @@
 """
 grok_client.py
-Handles all communication with the Grok API (xAI).
+Handles all communication with the Groq API.
 Keeps API logic fully separate from UI and prompt logic.
 """
 
@@ -10,38 +10,35 @@ from openai import OpenAI
 
 def get_client() -> OpenAI:
     """
-    Initialise the Grok-compatible OpenAI client.
+    Initialise the Groq-compatible OpenAI client.
     Reads the API key from Streamlit secrets or environment variable.
     """
     try:
         import streamlit as st
-        api_key = st.secrets.get("GROK_API_KEY") or os.environ.get("GROK_API_KEY")
+        api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
     except Exception:
-        api_key = os.environ.get("GROK_API_KEY")
+        api_key = os.environ.get("GROQ_API_KEY")
 
     if not api_key:
         raise ValueError(
-            "Grok API key not found. "
-            "Add GROK_API_KEY to .streamlit/secrets.toml or as an environment variable."
+            "Groq API key not found. "
+            "Add GROQ_API_KEY to .streamlit/secrets.toml or as an environment variable."
         )
 
     return OpenAI(
         api_key=api_key,
-        base_url="https://api.x.ai/v1",
+        base_url="https://api.groq.com/openai/v1",
     )
 
 
-def call_grok(system_prompt: str, user_prompt: str, model: str = "grok-3") -> dict:
+def call_grok(system_prompt: str, user_prompt: str, model: str = "llama-3.3-70b-versatile") -> dict:
     """
-    Send a prompt pair to Grok and return a parsed JSON dict.
-
-    The caller (prompts.py) is responsible for instructing the model
-    to return valid JSON. This function parses and returns it.
+    Send a prompt pair to Groq and return a parsed JSON dict.
 
     Args:
         system_prompt: Sets the role/context for the model.
         user_prompt:   The actual generation request with project details.
-        model:         Grok model name. Defaults to grok-3.
+        model:         Groq model name. Defaults to llama-3.3-70b-versatile (free tier).
 
     Returns:
         Parsed dict from the model's JSON response.
@@ -67,9 +64,7 @@ def call_grok(system_prompt: str, user_prompt: str, model: str = "grok-3") -> di
     # Strip markdown code fences if present
     if raw_text.startswith("```"):
         lines = raw_text.splitlines()
-        # Remove opening fence (```json or ```)
         lines = lines[1:] if lines[0].startswith("```") else lines
-        # Remove closing fence
         if lines and lines[-1].strip() == "```":
             lines = lines[:-1]
         raw_text = "\n".join(lines).strip()
@@ -78,7 +73,7 @@ def call_grok(system_prompt: str, user_prompt: str, model: str = "grok-3") -> di
         return json.loads(raw_text)
     except json.JSONDecodeError as e:
         raise ValueError(
-            f"Grok response was not valid JSON.\n"
+            f"Groq response was not valid JSON.\n"
             f"Parse error: {e}\n"
             f"Raw response:\n{raw_text}"
         )
